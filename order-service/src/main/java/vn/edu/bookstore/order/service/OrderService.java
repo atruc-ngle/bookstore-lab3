@@ -31,8 +31,13 @@ public class OrderService {
 
     public PlaceOrderResult place(long customerId, CreateOrderRequest request, String idempotencyKey) {
         String hash = requestHash(customerId, request);
-        // TODO(TH3-4): nếu có idempotencyKey và đã có đơn với khoá này thì trả lại đơn cũ
-        //   (gọi replay(idempotencyKey, hash)); cùng khoá nhưng khác nội dung → IdempotencyConflictException
+        // TH3-4: có Idempotency-Key và đã có đơn với khoá này → trả lại đơn cũ (trước khi gọi catalog)
+        if (idempotencyKey != null) {
+            Optional<PlaceOrderResult> existing = replay(idempotencyKey, hash);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
         // Gọi catalog-service NGOÀI giao dịch CSDL (không giữ kết nối CSDL trong lúc chờ mạng)
         List<Priced> priced = new ArrayList<>();
         for (CreateOrderRequest.Line line : request.lines()) {
