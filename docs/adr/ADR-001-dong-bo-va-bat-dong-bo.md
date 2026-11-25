@@ -31,15 +31,15 @@ Chúng tôi chọn **phương án B**: gọi `catalog-service` đồng bộ bằ
 Chưa chọn bất đồng bộ (C) vì quy mô hiện tại chưa đủ để bù chi phí vận hành broker và độ phức tạp nhất quán.
 
 ## 4. Hệ quả
-- Tích cực: sự cố catalog chỉ khiến yêu cầu đặt hàng bị từ chối **nhanh** (< 1,4 s trong kiểm thử), không treo luồng;
+- Tích cực: sự cố catalog chỉ khiến yêu cầu đặt hàng bị từ chối **nhanh** (< 4 s trong kiểm thử, lời gọi bị cầu dao chặn < 0,5 s), không treo luồng;
   giá luôn hiện hành; thử lại an toàn nhờ khoá chống trùng.
 - Tiêu cực / rủi ro chấp nhận: khi catalog tắt thì không đặt được hàng; ngưỡng cầu dao có thể chưa tối ưu.
 - Việc phải làm tiếp theo: theo dõi số lần chuyển trạng thái cầu dao qua log/metrics; cân nhắc phương án C hoặc D nếu
   lưu lượng tăng; áp dụng cùng khuôn mẫu cho `inventory-service`.
 
 ## 5. Cách kiểm chứng
-- `CatalogCircuitBreakerTest`: catalog chậm 1500 ms, timeout đọc 300 ms → 5 lần POST đều 503 trong < 1400 ms,
-  WireMock chỉ nhận đúng 2 yêu cầu.
+- `CatalogCircuitBreakerTest`: catalog chậm 5000 ms, timeout đọc 300 ms → 5 lần POST đều 503 (< 4000 ms, 3 lần cuối < 500 ms),
+  cầu dao chuyển sang OPEN và WireMock nhận ít hơn 5 yêu cầu.
 - `CatalogClientContractTest`: hợp đồng `getBookFound` / `getBookNotFound` bảo đảm hình dạng giao tiếp.
 - `OrderApiIntegrationTest`: cùng `Idempotency-Key` không tạo đơn thứ hai.
 - Xem xét lại khi tỉ lệ 503 do cầu dao vượt ngưỡng SLO, hoặc khi thêm dịch vụ thứ ba nằm trong chuỗi gọi đồng bộ.
